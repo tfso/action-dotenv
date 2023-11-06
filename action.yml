@@ -16,6 +16,11 @@ inputs:
     default: .env
     required: false
 
+  ignore-env:
+    description: A comma separated list of environment variables to ignore
+    default: ''
+    required: false
+
 runs:
   using: 'node16'
   main: 'dist/index.js'

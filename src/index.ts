@@ -3,6 +3,7 @@ import { context, getOctokit } from "@actions/github"
 import { Octokit } from "@octokit/core"
 
 import config from 'dotenv'
+import { expand } from 'dotenv-expand'
 
 main()
     .catch(err => console.error(err))
@@ -11,6 +12,7 @@ async function main(): Promise<void> {
     const githubApiKey = getInput("github-token") || process.env.GITHUB_TOKEN
     const repository = getInput('repository') || process.env.GITHUB_REPOSITORY
     const path = getInput('path') || '.env.production'
+    const ignoredEnvs = String(getInput('ignore-env') || '').split(',').map(env => env.trim()).filter(env => env.length > 0)
 
     const octokit = getOctokit(githubApiKey)
     
@@ -20,15 +22,19 @@ async function main(): Promise<void> {
     
     if(file) {
         const dotenv = config.parse(file)
+        const expanded = expand(dotenv)
 
-        if(dotenv) {
-            console.log(`setting output and env for ${Object.keys(dotenv).join(', ')}`)
+        if(expanded) {
+            console.log(`setting output and env for ${Object.keys(expanded).join(', ')}`)
 
-            for(const [key, value] of Object.entries(dotenv)) {
-                setOutput(key, value)            
+            for(const [key, value] of Object.entries(expanded)) {
+                if(ignoredEnvs.includes(key))
+                    continue
+
+                setOutput(key, value)
                 exportVariable(key, value)
             }
-        } 
+        }
         else {
             console.log(`setting no output since nothing is parsed.`)
         }
